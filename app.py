@@ -223,6 +223,14 @@ def save_uploaded_file(uploaded_file, prefix):
 def sync_financial_math(df):
     changed = False
     if df.empty: return df, changed
+    
+    # Correção Definitiva: Limpeza da coluna 'Inter' feita de uma vez só e fora do ciclo
+    if "Inter" in df.columns:
+        old_inter = df["Inter"].astype(str).copy()
+        df["Inter"] = df["Inter"].fillna("").astype(str).replace(["nan", "None", "<NA>", "NaN"], "")
+        if not df["Inter"].astype(str).equals(old_inter):
+            changed = True
+            
     for idx in df.index:
         if "Valor Estimado" not in df.columns: continue
         v_est = parse_currency(df.at[idx, "Valor Estimado"])
@@ -237,10 +245,6 @@ def sync_financial_math(df):
         if df.at[idx, "Valor Estimado"] != v_est: df.at[idx, "Valor Estimado"] = v_est; changed = True
         if "% DBS" in df.columns and df.at[idx, "% DBS"] != p_dbs: df.at[idx, "% DBS"] = p_dbs; changed = True
         if "% Inter" in df.columns and df.at[idx, "% Inter"] != p_int: df.at[idx, "% Inter"] = p_int; changed = True
-        
-        if "Inter" in df.columns:
-            val_inter = str(df.at[idx, "Inter"]).replace("nan", "").replace("None", "")
-            if df.at[idx, "Inter"] != val_inter: df.at[idx, "Inter"] = val_inter; changed = True
             
         if "Valor da % DBS" in df.columns:
             atual_dbs = pd.to_numeric(df.at[idx, "Valor da % DBS"], errors="coerce")
@@ -251,6 +255,7 @@ def sync_financial_math(df):
             atual_int = pd.to_numeric(df.at[idx, "Valor da % Inter"], errors="coerce")
             if pd.isna(atual_int): atual_int = 0.0
             if round(calc_int, 2) != round(atual_int, 2): df.at[idx, "Valor da % Inter"] = calc_int; changed = True
+            
     return df, changed
 
 def load_data():
