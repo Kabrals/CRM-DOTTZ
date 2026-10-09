@@ -6,7 +6,7 @@ import os
 import base64
 
 # 1. Configuração da página
-st.set_page_config(page_title="CRM Dottz", layout="wide")
+st.set_page_config(page_title="CRM Dottz", page_icon="logo.png", layout="wide")
 
 # --- SISTEMA DE LOGIN DE UTILIZADORES ---
 USERS = {
