@@ -20,7 +20,7 @@ TODO_PATH = "todo_database.csv"
 PAYMENTS_PATH = "payments_database.csv"
 INSTALLMENTS_PATH = "installments_database.csv"
 KPI_PATH = "kpis_database.csv"
-LIG_PATH = "lig_database.csv"
+ALCA_PATH = "alca_database.csv" # Alterado LIG para ALCA
 TCT_PATH = "tct_database.csv"
 FAMO_PATH = "famo_database.csv" # Novo caminho adicionado para a FAMO
 BUILDERS_PATH = "builders_database.csv"
@@ -310,38 +310,15 @@ def save_contact_data(df, file_name):
     file_path = file_name
     df.to_csv(file_path, index=False, encoding="utf-8-sig")
 
+# --- FUNÇÃO ATUALIZADA: SEM IMPORTAÇÃO CSV ---
 def render_contact_tab(tab, title, state_key, file_name, fields, submit_label, allow_manual_add=True, col_config=None, filter_distrito=False, filter_alvara=False):
     with tab:
         st.markdown(f"### {title}")
-        st.caption("Importa CSV/Excel ou usa os filtros para procurar e editar registos.")
+        st.caption("Usa os filtros para procurar e editar registos. Adiciona novos através do botão abaixo.")
         editor_version_key = f"{state_key}_editor_version"
         form_version_key = f"{state_key}_form_version"
         st.session_state.setdefault(editor_version_key, 0)
         st.session_state.setdefault(form_version_key, 0)
-
-        with st.expander("📥 Importar Ficheiro (CSV/Excel)"):
-            uploaded_file = st.file_uploader("Ficheiro CSV ou Excel", type=["csv", "xlsx"], key=f"{state_key}_upload")
-            if st.button("Importar e adicionar registos", key=f"{state_key}_import"):
-                if uploaded_file is None:
-                    st.warning("Seleciona primeiro um ficheiro para importar.")
-                else:
-                    try:
-                        imported_data = pd.read_csv(uploaded_file, encoding="utf-8-sig") if uploaded_file.name.lower().endswith(".csv") else pd.read_excel(uploaded_file)
-                        if file_name == "builders_database.csv": imported_data, _ = normalize_builder_columns(imported_data)
-                    except Exception as error:
-                        st.error(f"Não foi possível importar o ficheiro: {error}")
-                    else:
-                        for c in ["Contactado", "Interessado", "Parceria", "Projectos"]:
-                            if c not in imported_data.columns: imported_data[c] = "🔴 Não"
-                        existing_data = st.session_state[state_key]
-                        combined_data = pd.concat([existing_data, imported_data], ignore_index=True, sort=False)
-                        for c in ["Contactado", "Interessado", "Parceria", "Projectos"]:
-                            combined_data[c] = combined_data[c].fillna("🔴 Não").replace("", "🔴 Não")
-                        st.session_state[state_key] = combined_data
-                        save_contact_data(combined_data, file_name)
-                        st.session_state[editor_version_key] += 1
-                        st.success(f"{len(imported_data)} registos importados e guardados.")
-                        st.rerun()
 
         if allow_manual_add:
             with st.expander("➕ Adicionar Individualmente"):
@@ -392,7 +369,7 @@ def render_contact_tab(tab, title, state_key, file_name, fields, submit_label, a
                 save_contact_data(st.session_state[state_key], file_name)
                 st.rerun()
         else:
-            st.info("Ainda não existem registos. Adiciona um contacto ou importa um ficheiro para começar.")
+            st.info("Ainda não existem registos. Adiciona um contacto para começar.")
 
 # --- INICIALIZAR TODAS AS BASES DE DADOS E SINCRONIZAR FÓRMULAS ---
 if "leads_db" not in st.session_state: st.session_state.leads_db = load_data()
@@ -427,13 +404,14 @@ if "tct_db" not in st.session_state:
     if changed_tct: df_tct.to_csv(TCT_PATH, index=False, encoding="utf-8-sig")
     st.session_state.tct_db = df_tct
 
-if "lig_db" not in st.session_state:
-    df_lig = pd.read_csv(LIG_PATH) if os.path.exists(LIG_PATH) else pd.DataFrame(columns=cols_tct_base)
+# --- LIG MUDOU PARA ALCA ---
+if "alca_db" not in st.session_state:
+    df_alca = pd.read_csv(ALCA_PATH) if os.path.exists(ALCA_PATH) else pd.DataFrame(columns=cols_tct_base)
     for col in cols_tct_base:
-        if col not in df_lig.columns: df_lig[col] = None
-    df_lig, changed_lig = sync_financial_math(df_lig)
-    if changed_lig: df_lig.to_csv(LIG_PATH, index=False, encoding="utf-8-sig")
-    st.session_state.lig_db = df_lig
+        if col not in df_alca.columns: df_alca[col] = None
+    df_alca, changed_alca = sync_financial_math(df_alca)
+    if changed_alca: df_alca.to_csv(ALCA_PATH, index=False, encoding="utf-8-sig")
+    st.session_state.alca_db = df_alca
 
 # Inicialização da base de dados FAMO
 if "famo_db" not in st.session_state:
@@ -604,18 +582,16 @@ st.markdown("<br>", unsafe_allow_html=True)
 
 st.session_state.setdefault("crm_tabs", "Capturar e Enriquecer")
 
-# --- DEFINIÇÃO E ORDENAÇÃO DAS ABAS ---
-tab_captura, tab_pipeline, tab_comunicacao, tab_arquitectos, tab_parcerias_arq, tab_construtores, tab_parcerias_const, tab_tct, tab_lig, tab_famo, tab_calendario, tab_financeiro, tab_pagamentos, tab_todo, tab_objectivos = st.tabs([
+# --- DEFINIÇÃO E ORDENAÇÃO DAS ABAS (Parcerias removidas, LIG passou a ALCA) ---
+tab_captura, tab_pipeline, tab_comunicacao, tab_arquitectos, tab_construtores, tab_tct, tab_alca, tab_famo, tab_calendario, tab_financeiro, tab_pagamentos, tab_todo, tab_objectivos = st.tabs([
     "Capturar e Enriquecer",
     "Pipeline de Negócios",
     "Interações & Follow-Ups",
     "Arquitectos",
-    "Parcerias Arquitectos",
     "Construtores",
-    "Parcerias Construtores",
     "TCT",
-    "LIG",
-    "FAMO", # Nova aba FAMO adicionada aqui
+    "ALCA", 
+    "FAMO", 
     "Calendário",
     "Financeiro",
     "Pagamentos",
@@ -926,117 +902,15 @@ render_contact_tab(
     allow_manual_add=True, col_config=config_parcerias, filter_distrito=True
 )
 
-# --- 5. PARCERIAS ARQUITECTOS ---
-with tab_parcerias_arq:
-    st.markdown("### Gestão de Parcerias com Arquitectos")
-    colunas_estado_parceria = ["Contactado", "Interessado", "Parceria", "Projectos"]
-    bd_alterada = False
-    
-    for col in colunas_estado_parceria:
-        if col not in st.session_state.architects_db.columns:
-            st.session_state.architects_db[col] = "🔴 Não"
-            bd_alterada = True
-        else:
-            tem_vazios = st.session_state.architects_db[col].isna().any()
-            tem_brancos = (st.session_state.architects_db[col] == "").any()
-            if tem_vazios or tem_brancos:
-                st.session_state.architects_db[col] = st.session_state.architects_db[col].replace("", "🔴 Não").fillna("🔴 Não")
-                bd_alterada = True
-                
-    if bd_alterada:
-        save_contact_data(st.session_state.architects_db, "architects_database.csv")
-        
-    if st.session_state.architects_db.empty:
-        st.info("Ainda não existem arquitectos registados.")
-    else:
-        col_config_parcerias_a = {
-            "Nome": st.column_config.TextColumn("Nome", disabled=True),
-            "Distrito": st.column_config.TextColumn("Distrito", disabled=True),
-            "Telefone": st.column_config.TextColumn("Telefone", disabled=True),
-            "Email": st.column_config.TextColumn("Email", disabled=True),
-            "Contactado": st.column_config.SelectboxColumn("Contactado", options=["🟢 Sim", "🔴 Não"], required=True),
-            "Interessado": st.column_config.SelectboxColumn("Interessado", options=["🟢 Sim", "🔴 Não"], required=True),
-            "Parceria": st.column_config.SelectboxColumn("Parceria", options=["🟢 Sim", "🔴 Não"], required=True),
-            "Projectos": st.column_config.SelectboxColumn("Projectos", options=["🟢 Sim", "🔴 Não"], required=True)
-        }
-        colunas_para_mostrar = ["Nome", "Distrito", "Telefone", "Email", "Contactado", "Interessado", "Parceria", "Projectos"]
-        colunas_existentes = [c for c in colunas_para_mostrar if c in st.session_state.architects_db.columns]
-        
-        df_p_arq = st.session_state.architects_db[colunas_existentes].copy()
-        
-        st.markdown("**Filtros de Pesquisa**")
-        f_dist_pa = st.selectbox("Distrito", get_clean_list(df_p_arq, "Distrito"), key="f_dist_pa")
-        if f_dist_pa != "Todos": df_p_arq = df_p_arq[df_p_arq["Distrito"] == f_dist_pa]
-        
-        edited_parcerias = st.data_editor(df_p_arq, column_config=col_config_parcerias_a, use_container_width=True, hide_index=True, key="parcerias_editor")
-        if not edited_parcerias.equals(df_p_arq):
-            st.session_state.architects_db.update(edited_parcerias)
-            save_contact_data(st.session_state.architects_db, "architects_database.csv")
-            st.rerun()
-
-# --- 6. CONSTRUTORES ---
+# --- 5. CONSTRUTORES ---
 render_contact_tab(
     tab_construtores, "Construtores", "builders_db", "builders_database.csv", 
     ["Nome", "Alvará", "Contacto", "Função", "Telefone", "Email", "Distrito"], "Adicionar empresa", 
     allow_manual_add=True, col_config=config_parcerias_const, filter_distrito=True, filter_alvara=True
 )
 
-# --- 7. PARCERIAS CONSTRUTORES ---
-with tab_parcerias_const:
-    st.markdown("### Gestão de Parcerias com Construtores")
-    colunas_estado_parceria_const = ["Contactado", "Interessado", "Parceria", "Projectos"]
-    bd_alterada_const = False
-    
-    for col in colunas_estado_parceria_const:
-        if col not in st.session_state.builders_db.columns:
-            st.session_state.builders_db[col] = "🔴 Não"
-            bd_alterada_const = True
-        else:
-            tem_vazios = st.session_state.builders_db[col].isna().any()
-            tem_brancos = (st.session_state.builders_db[col] == "").any()
-            if tem_vazios or tem_brancos:
-                st.session_state.builders_db[col] = st.session_state.builders_db[col].replace("", "🔴 Não").fillna("🔴 Não")
-                bd_alterada_const = True
-                
-    if bd_alterada_const:
-        save_contact_data(st.session_state.builders_db, "builders_database.csv")
-        
-    if st.session_state.builders_db.empty:
-        st.info("Ainda não existem construtores registados.")
-    else:
-        col_config_parcerias_c = {
-            "Nome": st.column_config.TextColumn("Nome", disabled=True),
-            "Alvará": st.column_config.TextColumn("Alvará", disabled=True),
-            "Contacto": st.column_config.TextColumn("Contacto", disabled=False),
-            "Função": st.column_config.TextColumn("Função", disabled=False),
-            "Distrito": st.column_config.TextColumn("Distrito", disabled=True),
-            "Telefone": st.column_config.TextColumn("Telefone", disabled=True),
-            "Email": st.column_config.TextColumn("Email", disabled=True),
-            "Contactado": st.column_config.SelectboxColumn("Contactado", options=["🟢 Sim", "🔴 Não"], required=True),
-            "Interessado": st.column_config.SelectboxColumn("Interessado", options=["🟢 Sim", "🔴 Não"], required=True),
-            "Parceria": st.column_config.SelectboxColumn("Parceria", options=["🟢 Sim", "🔴 Não"], required=True),
-            "Projectos": st.column_config.SelectboxColumn("Projectos", options=["🟢 Sim", "🔴 Não"], required=True)
-        }
-        colunas_para_mostrar_const = ["Nome", "Alvará", "Contacto", "Função", "Distrito", "Telefone", "Email", "Contactado", "Interessado", "Parceria", "Projectos"]
-        colunas_existentes_const = [c for c in colunas_para_mostrar_const if c in st.session_state.builders_db.columns]
-        
-        df_p_const = st.session_state.builders_db[colunas_existentes_const].copy()
-        
-        st.markdown("**Filtros de Pesquisa**")
-        c1, c2 = st.columns(2)
-        f_dist_pc = c1.selectbox("Distrito", get_clean_list(df_p_const, "Distrito"), key="f_dist_pc")
-        f_alv_pc = c2.text_input("Pesquisar por Alvará", key="f_alv_pc")
-        
-        if f_dist_pc != "Todos": df_p_const = df_p_const[df_p_const["Distrito"] == f_dist_pc]
-        if f_alv_pc.strip(): df_p_const = df_p_const[df_p_const["Alvará"].astype(str).str.contains(f_alv_pc.strip(), case=False, na=False)]
-        
-        edited_parcerias_const = st.data_editor(df_p_const, column_config=col_config_parcerias_c, use_container_width=True, hide_index=True, key="parcerias_const_editor")
-        if not edited_parcerias_const.equals(df_p_const):
-            st.session_state.builders_db.update(edited_parcerias_const)
-            save_contact_data(st.session_state.builders_db, "builders_database.csv")
-            st.rerun()
 
-# --- 8. TCT ---
+# --- 6. TCT ---
 with tab_tct:
     st.markdown("### Gestão TCT")
     st.caption("Tabela independente para a TCT. Podes adicionar novos registos em baixo.")
@@ -1067,16 +941,16 @@ with tab_tct:
         st.session_state.tct_db.to_csv(TCT_PATH, index=False, encoding="utf-8-sig")
         st.rerun()
 
-# --- 9. LIG ---
-with tab_lig:
-    st.markdown("### Gestão LIG")
-    st.caption("Tabela independente para a LIG. Podes adicionar novos registos em baixo.")
+# --- 7. ALCA ---
+with tab_alca:
+    st.markdown("### Gestão ALCA")
+    st.caption("Tabela independente para a ALCA. Podes adicionar novos registos em baixo.")
     
-    df_lig = st.session_state.lig_db.copy()
-    styled_lig = df_lig.style.map(lambda v: {"⚪ Em Análise": "background-color:#FFF;color:#000", "🟡 Em Concurso": "background-color:#FFD700;color:#000", "🟣 Em Negociação": "background-color:#7B2CBF;color:#FFF", "🟢 Adjudicado": "background-color:#A5D6A7;color:#000", "🔴 Não Adjudicado": "background-color:#FF6B6B;color:#000"}.get(v, ""), subset=["Fase"])
+    df_alca = st.session_state.alca_db.copy()
+    styled_alca = df_alca.style.map(lambda v: {"⚪ Em Análise": "background-color:#FFF;color:#000", "🟡 Em Concurso": "background-color:#FFD700;color:#000", "🟣 Em Negociação": "background-color:#7B2CBF;color:#FFF", "🟢 Adjudicado": "background-color:#A5D6A7;color:#000", "🔴 Não Adjudicado": "background-color:#FF6B6B;color:#000"}.get(v, ""), subset=["Fase"])
     
-    edited_lig = st.data_editor(
-        styled_lig,
+    edited_alca = st.data_editor(
+        styled_alca,
         column_config={
             "Fase": st.column_config.SelectboxColumn("Fase", options=FASES_ATUAIS),
             "Valor Estimado": st.column_config.NumberColumn("Valor Estimado", format="%.0f €", step=1000.0),
@@ -1089,16 +963,16 @@ with tab_lig:
         use_container_width=True,
         hide_index=True,
         num_rows="dynamic",
-        key="lig_editor"
+        key="alca_editor"
     )
     
-    if not edited_lig.equals(df_lig):
-        st.session_state.lig_db = edited_lig
-        st.session_state.lig_db, _ = sync_financial_math(st.session_state.lig_db)
-        st.session_state.lig_db.to_csv(LIG_PATH, index=False, encoding="utf-8-sig")
+    if not edited_alca.equals(df_alca):
+        st.session_state.alca_db = edited_alca
+        st.session_state.alca_db, _ = sync_financial_math(st.session_state.alca_db)
+        st.session_state.alca_db.to_csv(ALCA_PATH, index=False, encoding="utf-8-sig")
         st.rerun()
 
-# --- 10. FAMO ---
+# --- 8. FAMO ---
 with tab_famo:
     st.markdown("### Gestão FAMO")
     st.caption("Tabela independente para a FAMO. Podes adicionar novos registos em baixo.")
@@ -1129,7 +1003,7 @@ with tab_famo:
         st.session_state.famo_db.to_csv(FAMO_PATH, index=False, encoding="utf-8-sig")
         st.rerun()
 
-# --- 11. CALENDÁRIO ---
+# --- 9. CALENDÁRIO ---
 with tab_calendario:
     nomes_meses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
     st.session_state.setdefault("followup_calendar_month", date.today().replace(day=1))
@@ -1221,7 +1095,7 @@ with tab_calendario:
                     st.session_state["selected_project_id"] = int(ev["id"])
                     st.success(f"Projeto colocado na memória. Clica no menu da aba **{ev['aba']}** lá em cima!")
 
-# --- 12. FINANCEIRO ---
+# --- 10. FINANCEIRO ---
 with tab_financeiro:
     st.markdown("### Painel Financeiro e Estatístico")
     
@@ -1298,7 +1172,7 @@ with tab_financeiro:
         c2.metric("Total Valor Adjudicado", f"{int(total_adjudicado):,} €".replace(",", " "), delta=f"Média: {int(media_adjudicado):,} €".replace(",", " "), delta_color="off")
         c3.metric("Total Valor da % DBS", f"{int(total_perc_dbs):,} €".replace(",", " "), delta=f"Média: {int(media_dbs):,} €".replace(",", " "), delta_color="off")
 
-# --- 13. PAGAMENTOS ---
+# --- 11. PAGAMENTOS ---
 with tab_pagamentos:
     st.markdown("### Mapa Cronológico de Pagamentos")
     
@@ -1465,7 +1339,7 @@ with tab_pagamentos:
     else:
         st.info("Ainda não existem obras classificadas como '🟢 Adjudicado' na Pipeline.")
 
-# --- 14. TO DO LIST ---
+# --- 12. TO DO LIST ---
 with tab_todo:
     st.markdown("### To Do List")
     st.caption("Gere as tuas tarefas e os teus próximos passos de forma dinâmica.")
@@ -1524,7 +1398,7 @@ with tab_todo:
     else:
         st.info("Não há tarefas na tua lista.")
 
-# --- 15. OBJECTIVOS ---
+# --- 13. OBJECTIVOS ---
 with tab_objectivos:
     st.markdown("### Quadro Global de Objetivos e KPIs (2027)")
     st.caption("Clica na coluna 'Objetivo' para editares o teu alvo. Usa apenas números.")
@@ -1625,5 +1499,4 @@ with tab_objectivos:
     if not edited_kpi["Objetivo (Editável)"].equals(df_kpi_display["Objetivo (Editável)"]):
         st.session_state.kpi_db["Objetivo"] = edited_kpi["Objetivo (Editável)"].apply(parse_kpi_input)
         st.session_state.kpi_db.to_csv(KPI_PATH, index=False, encoding="utf-8-sig")
-        st.rerun()
         st.rerun()
