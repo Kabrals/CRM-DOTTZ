@@ -21,10 +21,11 @@ PAYMENTS_PATH = "payments_database.csv"
 INSTALLMENTS_PATH = "installments_database.csv"
 KPI_PATH = "kpis_database.csv"
 LIG_PATH = "lig_database.csv"
+TCT_PATH = "tct_database.csv"
+FAMO_PATH = "famo_database.csv" # Novo caminho adicionado para a FAMO
 BUILDERS_PATH = "builders_database.csv"
 ARCHITECTS_PATH = "architects_database.csv"
 
-TCT_PATH = "tct_database.csv"
 ATTACHMENTS_DIR = "Anexos"
 LOGO_PATH = "logo.png"
 
@@ -434,6 +435,16 @@ if "lig_db" not in st.session_state:
     if changed_lig: df_lig.to_csv(LIG_PATH, index=False, encoding="utf-8-sig")
     st.session_state.lig_db = df_lig
 
+# Inicialização da base de dados FAMO
+if "famo_db" not in st.session_state:
+    df_famo = pd.read_csv(FAMO_PATH) if os.path.exists(FAMO_PATH) else pd.DataFrame(columns=cols_tct_base)
+    for col in cols_tct_base:
+        if col not in df_famo.columns: df_famo[col] = None
+    df_famo, changed_famo = sync_financial_math(df_famo)
+    if changed_famo: df_famo.to_csv(FAMO_PATH, index=False, encoding="utf-8-sig")
+    st.session_state.famo_db = df_famo
+
+
 config_parcerias = {
     "Contactado": st.column_config.SelectboxColumn("Contactado", options=["🟢 Sim", "🔴 Não"], required=True),
     "Interessado": st.column_config.SelectboxColumn("Interessado", options=["🟢 Sim", "🔴 Não"], required=True),
@@ -594,7 +605,7 @@ st.markdown("<br>", unsafe_allow_html=True)
 st.session_state.setdefault("crm_tabs", "Capturar e Enriquecer")
 
 # --- DEFINIÇÃO E ORDENAÇÃO DAS ABAS ---
-tab_captura, tab_pipeline, tab_comunicacao, tab_arquitectos, tab_parcerias_arq, tab_construtores, tab_parcerias_const, tab_tct, tab_lig, tab_calendario, tab_financeiro, tab_pagamentos, tab_todo, tab_objectivos = st.tabs([
+tab_captura, tab_pipeline, tab_comunicacao, tab_arquitectos, tab_parcerias_arq, tab_construtores, tab_parcerias_const, tab_tct, tab_lig, tab_famo, tab_calendario, tab_financeiro, tab_pagamentos, tab_todo, tab_objectivos = st.tabs([
     "Capturar e Enriquecer",
     "Pipeline de Negócios",
     "Interações & Follow-Ups",
@@ -604,6 +615,7 @@ tab_captura, tab_pipeline, tab_comunicacao, tab_arquitectos, tab_parcerias_arq, 
     "Parcerias Construtores",
     "TCT",
     "LIG",
+    "FAMO", # Nova aba FAMO adicionada aqui
     "Calendário",
     "Financeiro",
     "Pagamentos",
@@ -1086,7 +1098,38 @@ with tab_lig:
         st.session_state.lig_db.to_csv(LIG_PATH, index=False, encoding="utf-8-sig")
         st.rerun()
 
-# --- 10. CALENDÁRIO ---
+# --- 10. FAMO ---
+with tab_famo:
+    st.markdown("### Gestão FAMO")
+    st.caption("Tabela independente para a FAMO. Podes adicionar novos registos em baixo.")
+    
+    df_famo = st.session_state.famo_db.copy()
+    styled_famo = df_famo.style.map(lambda v: {"⚪ Em Análise": "background-color:#FFF;color:#000", "🟡 Em Concurso": "background-color:#FFD700;color:#000", "🟣 Em Negociação": "background-color:#7B2CBF;color:#FFF", "🟢 Adjudicado": "background-color:#A5D6A7;color:#000", "🔴 Não Adjudicado": "background-color:#FF6B6B;color:#000"}.get(v, ""), subset=["Fase"])
+    
+    edited_famo = st.data_editor(
+        styled_famo,
+        column_config={
+            "Fase": st.column_config.SelectboxColumn("Fase", options=FASES_ATUAIS),
+            "Valor Estimado": st.column_config.NumberColumn("Valor Estimado", format="%.0f €", step=1000.0),
+            "% DBS": st.column_config.NumberColumn("% DBS", format="%.2f %%"),
+            "Valor da % DBS": st.column_config.NumberColumn("Valor da % DBS", format="%.0f €", disabled=True),
+            "Inter": st.column_config.TextColumn("Inter"),
+            "% Inter": st.column_config.NumberColumn("% Inter", format="%.2f %%"),
+            "Valor da % Inter": st.column_config.NumberColumn("Valor da % Inter", format="%.0f €", disabled=True),
+        },
+        use_container_width=True,
+        hide_index=True,
+        num_rows="dynamic",
+        key="famo_editor"
+    )
+    
+    if not edited_famo.equals(df_famo):
+        st.session_state.famo_db = edited_famo
+        st.session_state.famo_db, _ = sync_financial_math(st.session_state.famo_db)
+        st.session_state.famo_db.to_csv(FAMO_PATH, index=False, encoding="utf-8-sig")
+        st.rerun()
+
+# --- 11. CALENDÁRIO ---
 with tab_calendario:
     nomes_meses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
     st.session_state.setdefault("followup_calendar_month", date.today().replace(day=1))
@@ -1178,7 +1221,7 @@ with tab_calendario:
                     st.session_state["selected_project_id"] = int(ev["id"])
                     st.success(f"Projeto colocado na memória. Clica no menu da aba **{ev['aba']}** lá em cima!")
 
-# --- 11. FINANCEIRO ---
+# --- 12. FINANCEIRO ---
 with tab_financeiro:
     st.markdown("### Painel Financeiro e Estatístico")
     
@@ -1213,10 +1256,10 @@ with tab_financeiro:
             column_config={
                 "Fase": st.column_config.SelectboxColumn("Fase", options=FASES_ATUAIS),
                 "Valor Estimado": st.column_config.NumberColumn("Valor Estimado", format="%.0f €", step=1000.0),
-                "% DBS": st.column_config.NumberColumn("% DBS", format="%.2f %%"),
+                "%% DBS": st.column_config.NumberColumn("% DBS", format="%.2f %%"),
                 "Valor da % DBS": st.column_config.NumberColumn("Valor da % DBS", format="%.0f €", disabled=True),
                 "Inter": st.column_config.TextColumn("Inter"),
-                "% Inter": st.column_config.NumberColumn("% Inter", format="%.2f %%"),
+                "%% Inter": st.column_config.NumberColumn("% Inter", format="%.2f %%"),
                 "Valor da % Inter": st.column_config.NumberColumn("Valor da % Inter", format="%.0f €", disabled=True),
             },
             use_container_width=True,
@@ -1255,7 +1298,7 @@ with tab_financeiro:
         c2.metric("Total Valor Adjudicado", f"{int(total_adjudicado):,} €".replace(",", " "), delta=f"Média: {int(media_adjudicado):,} €".replace(",", " "), delta_color="off")
         c3.metric("Total Valor da % DBS", f"{int(total_perc_dbs):,} €".replace(",", " "), delta=f"Média: {int(media_dbs):,} €".replace(",", " "), delta_color="off")
 
-# --- 12. PAGAMENTOS ---
+# --- 13. PAGAMENTOS ---
 with tab_pagamentos:
     st.markdown("### Mapa Cronológico de Pagamentos")
     
@@ -1422,7 +1465,7 @@ with tab_pagamentos:
     else:
         st.info("Ainda não existem obras classificadas como '🟢 Adjudicado' na Pipeline.")
 
-# --- 13. TO DO LIST ---
+# --- 14. TO DO LIST ---
 with tab_todo:
     st.markdown("### To Do List")
     st.caption("Gere as tuas tarefas e os teus próximos passos de forma dinâmica.")
@@ -1481,7 +1524,7 @@ with tab_todo:
     else:
         st.info("Não há tarefas na tua lista.")
 
-# --- 14. OBJECTIVOS ---
+# --- 15. OBJECTIVOS ---
 with tab_objectivos:
     st.markdown("### Quadro Global de Objetivos e KPIs (2027)")
     st.caption("Clica na coluna 'Objetivo' para editares o teu alvo. Usa apenas números.")
@@ -1582,4 +1625,5 @@ with tab_objectivos:
     if not edited_kpi["Objetivo (Editável)"].equals(df_kpi_display["Objetivo (Editável)"]):
         st.session_state.kpi_db["Objetivo"] = edited_kpi["Objetivo (Editável)"].apply(parse_kpi_input)
         st.session_state.kpi_db.to_csv(KPI_PATH, index=False, encoding="utf-8-sig")
+        st.rerun()
         st.rerun()
