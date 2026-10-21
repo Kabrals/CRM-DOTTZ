@@ -14,7 +14,7 @@ USERS = {
     "alcastro": "DBS2027"
 }
 
-# --- CONFIGURAÇÃO DOS CAMINHOS DAS PASTAS (CORRIGIDO PARA A CLOUD) ---
+# --- CONFIGURAÇÃO DOS CAMINHOS DAS PASTAS ---
 DB_PATH = "leads_database.csv"
 TODO_PATH = "todo_database.csv"
 PAYMENTS_PATH = "payments_database.csv"
@@ -125,7 +125,6 @@ if not st.session_state["logged_in"]:
                     st.error("Credenciais inválidas.")
                     
     st.stop()
-
 
 # --- CSS E DESIGN (MODO LOGADO) ---
 st.markdown(
@@ -292,17 +291,17 @@ def load_contact_data(file_name):
 def save_contact_data(df, file_name):
     df.to_csv(file_name, index=False, encoding="utf-8-sig")
 
-# --- FUNÇÃO ATUALIZADA: GESTÃO DIRETA NA TABELA (SEM FORMULÁRIO) ---
+# --- FUNÇÃO GESTÃO DIRETA NA TABELA PARA CONTACTOS ---
 def render_contact_tab(tab, title, state_key, file_name, col_config=None, filter_nome=False, filter_distrito=False, filter_alvara=False):
     with tab:
         st.markdown(f"### {title}")
-        st.caption("Usa os filtros abaixo para pesquisar. Adiciona, edita ou elimina contactos diretamente na tabela (clica na linha e pressiona 'Delete' para apagar, ou escreve na última linha vazia para adicionar um novo).")
+        st.caption("Usa os filtros abaixo para pesquisar. Adiciona, edita ou elimina contactos diretamente na tabela (seleciona a linha na margem esquerda e pressiona 'Delete' para apagar, ou escreve na última linha vazia para adicionar um novo).")
 
         df_display = st.session_state[state_key].copy()
 
         # Filtros de Pesquisa
         if filter_nome or filter_distrito or filter_alvara:
-            st.markdown("**Filtros:**")
+            st.markdown("**Filtros de Pesquisa:**")
             f_cols = st.columns(3)
             
             if filter_nome and "Nome" in df_display.columns:
@@ -338,7 +337,7 @@ def render_contact_tab(tab, title, state_key, file_name, col_config=None, filter
             # Adicionar novas linhas que foram criadas no Data Editor
             new_rows = edited_data.loc[~edited_data.index.isin(st.session_state[state_key].index)]
             if not new_rows.empty: 
-                # Preencher colunas vazias de sistema (ex: parcerias)
+                # Preencher colunas vazias de sistema
                 for col in ["Contactado", "Interessado", "Parceria", "Projectos"]:
                     if col in new_rows.columns:
                         new_rows[col] = new_rows[col].fillna("🔴 Não").replace("", "🔴 Não")
@@ -410,27 +409,30 @@ config_parcerias = {
 }
 colunas_parcerias = ["Contactado", "Interessado", "Parceria", "Projectos"]
 
-# --- LIMPEZA E CONFIGURAÇÃO ARQUITECTOS ---
+# --- LIMPEZA E CONFIGURAÇÃO RESTRITA DOS ARQUITECTOS ---
 cols_arq_requeridas = ["Nome", "Distrito", "Responsável", "Telefone", "Email", "Contactado", "Interessado", "Parceria", "Projectos"]
 if "architects_db" not in st.session_state:
     df_arq = load_contact_data("architects_database.csv")
-    # Forçar apenas as colunas desejadas (remove colunas velhas)
+    
+    # Adicionar as colunas que faltarem
     for col in cols_arq_requeridas:
         if col not in df_arq.columns:
             df_arq[col] = "🔴 Não" if col in colunas_parcerias else ""
+            
+    # Forçar EXATAMENTE o subset de colunas pedido (descarta lixo residual)
     df_arq = df_arq[cols_arq_requeridas]
     
     # Preencher vazios em selects
     for col in colunas_parcerias:
         df_arq[col] = df_arq[col].replace("", "🔴 Não").fillna("🔴 Não")
-    
+        
     st.session_state.architects_db = df_arq
     save_contact_data(st.session_state.architects_db, "architects_database.csv")
 
 nomes_arquitectos = listar_nomes_arquitectos()
 
-# --- LIMPEZA E CONFIGURAÇÃO CONSTRUTORES ---
-cols_builders_requeridas = ["Nome", "Alvará", "Contacto", "Função", "Telefone", "Email", "Distrito", "Contactado", "Interessado", "Parceria", "Projectos"]
+# --- LIMPEZA E CONFIGURAÇÃO RESTRITA DOS CONSTRUTORES ---
+cols_builders_requeridas = ["Nome", "Alvará", "Contacto", "Função", "Telefone", "Email", "Contactado", "Interessado", "Parceria", "Projectos"]
 if "builders_db" not in st.session_state:
     df_build = load_contact_data("builders_database.csv")
     
@@ -440,10 +442,12 @@ if "builders_db" not in st.session_state:
     elif "Empresa" in df_build.columns and "Nome" in df_build.columns:
         df_build.loc[df_build["Nome"].isna() | (df_build["Nome"]==""), "Nome"] = df_build["Empresa"]
         
-    # Forçar apenas as colunas desejadas (remove colunas velhas)
+    # Adicionar as colunas que faltarem
     for col in cols_builders_requeridas:
         if col not in df_build.columns:
             df_build[col] = "🔴 Não" if col in colunas_parcerias else ""
+            
+    # Forçar EXATAMENTE o subset de colunas pedido (descarta lixo residual)
     df_build = df_build[cols_builders_requeridas]
     
     # Preencher vazios em selects
