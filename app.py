@@ -47,11 +47,9 @@ if not st.session_state["logged_in"]:
     st.markdown(
         """
         <style>
-        /* Fundo totalmente branco */
         .stApp { background-color: #FFFFFF !important; }
         header { visibility: hidden !important; }
         
-        /* Limpar as caixas extra e formatações base do Streamlit */
         [data-testid="stForm"] {
             border: none !important;
             padding: 0 !important;
@@ -60,7 +58,6 @@ if not st.session_state["logged_in"]:
             margin: 0 auto !important;
         }
         
-        /* Estilização minimalista dos inputs (com texto ao centro) */
         [data-testid="stForm"] input {
             background-color: #F8F9FA !important;
             border: 1px solid #E0E0E0 !important;
@@ -78,7 +75,6 @@ if not st.session_state["logged_in"]:
             background-color: #FFFFFF !important;
         }
         
-        /* Estilização EXCLUSIVA do botão de submeter */
         [data-testid="stFormSubmitButton"] button {
             background-color: #7B2CBF !important;
             color: #FFFFFF !important;
@@ -92,25 +88,24 @@ if not st.session_state["logged_in"]:
         }
         [data-testid="stFormSubmitButton"] button:hover {
             background-color: #5B2C83 !important;
+            color: #FFFFFF !important;
+        }
+        [data-testid="stFormSubmitButton"] button * {
+            color: #FFFFFF !important;
         }
         </style>
         """, unsafe_allow_html=True
     )
     
-    # Espaçamento para centrar verticalmente na página
     st.markdown("<br><br><br><br><br><br>", unsafe_allow_html=True)
-    
-    # Três colunas para trancar o login no centro do ecrã
     _, col_center, _ = st.columns([1, 1, 1])
     
     with col_center:
-        # Logótipo da Dottz centrado
         if logo_b64:
             st.markdown(f"<div style='text-align: center; margin-bottom: 35px;'><img src='data:image/png;base64,{logo_b64}' style='max-width: 250px;'></div>", unsafe_allow_html=True)
         else:
             st.markdown("<h2 style='text-align: center; color: #5B2C83; margin-bottom: 35px;'>DOTTZ CRM</h2>", unsafe_allow_html=True)
             
-        # Formulário com Placeholders e Labels Invisíveis
         with st.form("login_form"):
             user_input = st.text_input("Utilizador", placeholder="Username", label_visibility="collapsed")
             pass_input = st.text_input("Password", type="password", placeholder="Password", label_visibility="collapsed")
@@ -130,19 +125,100 @@ if not st.session_state["logged_in"]:
 st.markdown(
     """
     <style>
+    /* Forçar modo claro global e nas grelhas para nunca ficar fundo escuro ao escrever */
+    :root {
+        color-scheme: light !important;
+        --gdg-bg-cell: #FFFFFF !important;
+        --gdg-bg-cell-medium: #F8F9FA !important;
+        --gdg-bg-header: #F1F3F5 !important;
+        --gdg-bg-header-has-focus: #E9ECEF !important;
+        --gdg-bg-header-hovered: #E9ECEF !important;
+        --gdg-text-dark: #000000 !important;
+        --gdg-text-medium: #333333 !important;
+        --gdg-text-light: #666666 !important;
+        --gdg-text-header: #000000 !important;
+        --gdg-border-color: #E0E0E0 !important;
+        --gdg-accent-color: #7B2CBF !important;
+        --gdg-accent-light: #F3E8FF !important;
+    }
+
     body, p, label, input, textarea, select, button, code { font-family: "Agency FB", "Bahnschrift", "Segoe UI Variable", sans-serif !important; }
     h1, h2, h3, h4, h5, h6 { font-family: "Agency FB", "Bahnschrift", sans-serif !important; font-weight: 700 !important; }
-    .stApp { background-color: #FFFFFF !important; }
+    .stApp { background-color: #FFFFFF !important; color: #000000 !important; }
     h1, h2, h3, h4, h5, h6, p, label, .stMarkdown, .stText { color: #000000 !important; }
-    input, textarea, div[data-baseweb="select"] > div { background-color: #F8F9FA !important; color: #000000 !important; border: 1px solid #CCCCCC !important; }
+    
+    /* Inputs, caixas de texto e selects sempre com fundo claro e letra preta */
+    input, textarea, div[data-baseweb="select"] > div, div[data-baseweb="base-input"] {
+        background-color: #F8F9FA !important;
+        color: #000000 !important;
+        border: 1px solid #CCCCCC !important;
+        -webkit-text-fill-color: #000000 !important;
+    }
+    
+    /* Menus dropdown abertos e popovers (edição de células) com fundo branco e letra preta */
+    div[data-baseweb="popover"], div[data-baseweb="popover"] *, ul[role="listbox"], ul[role="listbox"] li {
+        background-color: #FFFFFF !important;
+        color: #000000 !important;
+    }
+    
+    /* Tabelas / Data Editor com fundo branco forçado */
+    [data-testid="stDataFrame"], [data-testid="stTable"] {
+        background-color: #FFFFFF !important;
+    }
+    [data-testid="stDataFrame"] div, [data-testid="stDataFrame"] span {
+        color: #000000 !important;
+    }
+
+    /* TODOS OS BOTÕES DE CONFIRMAÇÃO / INSERÇÃO COM FUNDO ROXO E LETRA BRANCA */
+    div.stButton > button, 
+    [data-testid="stFormSubmitButton"] > button, 
+    [data-testid="stDownloadButton"] > button {
+        background-color: #7B2CBF !important;
+        color: #FFFFFF !important;
+        border: none !important;
+        border-radius: 6px !important;
+        font-weight: bold !important;
+        padding: 8px 16px !important;
+        transition: all 0.2s ease !important;
+    }
+    div.stButton > button:hover, 
+    [data-testid="stFormSubmitButton"] > button:hover, 
+    [data-testid="stDownloadButton"] > button:hover {
+        background-color: #5B2C83 !important;
+        color: #FFFFFF !important;
+    }
+    div.stButton > button *, 
+    [data-testid="stFormSubmitButton"] > button *, 
+    [data-testid="stDownloadButton"] > button * {
+        color: #FFFFFF !important;
+    }
+
+    /* Estilo dos cabeçalhos dos Expanders (ex: botão Adicionar Arquitecto / Construtor) */
+    [data-testid="stExpander"] details summary {
+        background-color: #7B2CBF !important;
+        color: #FFFFFF !important;
+        border-radius: 6px !important;
+        padding: 10px 15px !important;
+        font-weight: bold !important;
+    }
+    [data-testid="stExpander"] details summary * {
+        color: #FFFFFF !important;
+        fill: #FFFFFF !important;
+    }
+    [data-testid="stExpander"] details {
+        border: 1px solid #E0E0E0 !important;
+        border-radius: 6px !important;
+        background-color: #FFFFFF !important;
+    }
+
+    /* Abas de navegação */
     button[data-baseweb="tab"] p { color: #666666 !important; }
     button[data-baseweb="tab"][aria-selected="true"] p { color: #000000 !important; font-weight: bold !important; }
-    [data-testid="stDataFrame"] div, [data-testid="stDataFrame"] span { color: #000000 !important; }
     .stTabs [role="tablist"] { justify-content: center; flex-wrap: wrap; }
     .stTabs [data-testid="stTab"] p { font-size: 1.1em !important; }
     .stTabs [data-testid="stTab"] .react-aria-SelectionIndicator { background-color: #7B2CBF !important; }
     
-    /* BOTÃO DE LOGOUT SUPERIOR ESQUERDO MINIMALISTA E INVISÍVEL */
+    /* BOTÃO DE LOGOUT SUPERIOR ESQUERDO MINIMALISTA */
     .st-key-btn_logout {
         position: absolute;
         top: -40px; 
@@ -152,14 +228,17 @@ st.markdown(
     .st-key-btn_logout button {
         background-color: transparent !important;
         border: none !important;
-        color: #C0C0C0 !important; 
+        color: #888888 !important; 
         font-size: 12px !important;
         font-weight: 300 !important;
-        opacity: 0.4 !important;
+        opacity: 0.6 !important;
         box-shadow: none !important;
         padding: 5px !important;
     }
-    .st-key-btn_logout button:hover {
+    .st-key-btn_logout button * {
+        color: #888888 !important;
+    }
+    .st-key-btn_logout button:hover, .st-key-btn_logout button:hover * {
         color: #000000 !important;
         opacity: 1 !important;
         background-color: transparent !important;
@@ -183,6 +262,7 @@ COLUNA_ANEXO_PROJETO = "Anexo Projeto"
 
 FASES_ATUAIS = ["⚪ Em Análise", "🟡 Em Concurso", "🟣 Em Negociação", "🟢 Adjudicado", "🔴 Não Adjudicado"]
 ESTADOS_PAGAMENTO = ["⚪ Não facturado", "🟡 Fatura por pagar", "🟢 Recebido"]
+OPCOES_SIM_NAO = ["🟢 Sim", "🔴 Não"]
 
 # CRIAR PASTAS SE NÃO EXISTIREM
 if not os.path.exists(ATTACHMENTS_DIR): os.makedirs(ATTACHMENTS_DIR)
@@ -340,39 +420,49 @@ if "famo_db" not in st.session_state:
     if changed_famo: df_famo.to_csv(FAMO_PATH, index=False, encoding="utf-8-sig")
     st.session_state.famo_db = df_famo
 
-colunas_parcerias = ["Contactado", "Interessado", "Parceria", "Projectos"]
+# --- INICIALIZAÇÃO BASE DE DADOS ARQUITECTOS ---
+cols_arq_texto = ["Nome", "Responsável", "Telefone", "Email", "Distrito"]
+cols_arq_bool = ["Contactado", "Reunião", "Interessado", "Parceria"]
+cols_arq_todas = cols_arq_texto + cols_arq_bool
 
-# --- LIMPEZA E CONFIGURAÇÃO RESTRITA DOS ARQUITECTOS (MANTIDO EM BACKGROUND) ---
-cols_arq_requeridas = ["Nome", "Distrito", "Responsável", "Telefone", "Email", "Contactado", "Interessado", "Parceria", "Projectos"]
 if "architects_db" not in st.session_state:
-    df_arq = load_contact_data("architects_database.csv")
-    for col in cols_arq_requeridas:
+    df_arq = load_contact_data(ARCHITECTS_PATH)
+    for col in cols_arq_todas:
         if col not in df_arq.columns:
-            df_arq[col] = "🔴 Não" if col in colunas_parcerias else ""
-    df_arq = df_arq[cols_arq_requeridas]
-    for col in colunas_parcerias:
-        df_arq[col] = df_arq[col].replace("", "🔴 Não").fillna("🔴 Não")
+            df_arq[col] = "🔴 Não" if col in cols_arq_bool else ""
+    df_arq = df_arq[cols_arq_todas]
+    for col in cols_arq_texto:
+        df_arq[col] = df_arq[col].fillna("").astype(str).replace(["nan", "None"], "")
+    for col in cols_arq_bool:
+        df_arq[col] = df_arq[col].replace({"Sim": "🟢 Sim", "Não": "🔴 Não", "": "🔴 Não"}).fillna("🔴 Não")
+        df_arq[col] = df_arq[col].apply(lambda x: x if x in OPCOES_SIM_NAO else "🔴 Não")
     st.session_state.architects_db = df_arq
-    save_contact_data(st.session_state.architects_db, "architects_database.csv")
+    save_contact_data(st.session_state.architects_db, ARCHITECTS_PATH)
 
 nomes_arquitectos = listar_nomes_arquitectos()
 
-# --- LIMPEZA E CONFIGURAÇÃO RESTRITA DOS CONSTRUTORES (MANTIDO EM BACKGROUND) ---
-cols_builders_requeridas = ["Nome", "Alvará", "Contacto", "Função", "Telefone", "Email", "Contactado", "Interessado", "Parceria", "Projectos"]
+# --- INICIALIZAÇÃO BASE DE DADOS CONSTRUCTORES ---
+cols_const_texto = ["Nome", "Alvará", "Distrito", "Responsável", "Função", "Telefone", "Email"]
+cols_const_bool = ["Contactado", "Reunião", "Parceria"]
+cols_const_todas = cols_const_texto + cols_const_bool
+
 if "builders_db" not in st.session_state:
-    df_build = load_contact_data("builders_database.csv")
+    df_build = load_contact_data(BUILDERS_PATH)
     if "Empresa" in df_build.columns and "Nome" not in df_build.columns:
         df_build = df_build.rename(columns={"Empresa": "Nome"})
-    elif "Empresa" in df_build.columns and "Nome" in df_build.columns:
-        df_build.loc[df_build["Nome"].isna() | (df_build["Nome"]==""), "Nome"] = df_build["Empresa"]
-    for col in cols_builders_requeridas:
+    if "Contacto" in df_build.columns and "Responsável" not in df_build.columns:
+        df_build = df_build.rename(columns={"Contacto": "Responsável"})
+    for col in cols_const_todas:
         if col not in df_build.columns:
-            df_build[col] = "🔴 Não" if col in colunas_parcerias else ""
-    df_build = df_build[cols_builders_requeridas]
-    for col in colunas_parcerias:
-        df_build[col] = df_build[col].replace("", "🔴 Não").fillna("🔴 Não")
+            df_build[col] = "🔴 Não" if col in cols_const_bool else ""
+    df_build = df_build[cols_const_todas]
+    for col in cols_const_texto:
+        df_build[col] = df_build[col].fillna("").astype(str).replace(["nan", "None"], "")
+    for col in cols_const_bool:
+        df_build[col] = df_build[col].replace({"Sim": "🟢 Sim", "Não": "🔴 Não", "": "🔴 Não"}).fillna("🔴 Não")
+        df_build[col] = df_build[col].apply(lambda x: x if x in OPCOES_SIM_NAO else "🔴 Não")
     st.session_state.builders_db = df_build
-    save_contact_data(st.session_state.builders_db, "builders_database.csv")
+    save_contact_data(st.session_state.builders_db, BUILDERS_PATH)
 
 # To Do List 
 if "todo_db" not in st.session_state:
@@ -456,10 +546,12 @@ st.markdown("<br>", unsafe_allow_html=True)
 
 st.session_state.setdefault("crm_tabs", "Capturar e Enriquecer")
 
-tab_captura, tab_pipeline, tab_comunicacao, tab_tct, tab_alca, tab_famo, tab_calendario, tab_financeiro, tab_pagamentos, tab_todo, tab_objectivos = st.tabs([
+tab_captura, tab_pipeline, tab_comunicacao, tab_arquitectos, tab_construtores, tab_tct, tab_alca, tab_famo, tab_calendario, tab_financeiro, tab_pagamentos, tab_todo, tab_objectivos = st.tabs([
     "Capturar e Enriquecer",
     "Pipeline de Negócios",
     "Interações & Follow-Ups",
+    "Arquitectos",
+    "Constructores",
     "TCT",
     "ALCA", 
     "FAMO", 
@@ -540,7 +632,7 @@ with tab_pipeline:
                 .st-key-{chave_linha} input {{background:#F8F9FA !important;color:#222 !important;text-align:center !important;border-color:#CCCCCC !important;font-size:0.9rem !important;}}
                 .st-key-{chave_follow_up} {{background:#15803D;color:#fff;padding:4px;border-radius:4px;}}
                 .st-key-{chave_follow_up} p, .st-key-{chave_follow_up} code {{background:#15803D;color:#fff !important;text-align:center !important;font-size:0.9rem !important;}}
-                .st-key-{chave_follow_up} input {{background:#15803D !important;color:#fff !important;text-align:center !important;border-color:#15803D !important;font-size:0.9rem !important;}}
+                .st-key-{chave_follow_up} input {{background:#15803D !important;color:#fff !important;text-align:center !important;border-color:#15803D !important;font-size:0.9rem !important; -webkit-text-fill-color: #fff !important;}}
                 .st-key-{chave_fase} [data-testid="stSelectbox"] .react-aria-ComboBox > div {{background:{cor_fundo} !important;color:{cor_texto} !important;}}
                 .st-key-{chave_fase} [data-testid="stSelectbox"] .react-aria-ComboBox input,
                 .st-key-{chave_fase} [data-testid="stSelectbox"] .react-aria-ComboBox button {{background:{cor_fundo} !important;color:{cor_texto} !important;text-align:center !important;font-size:0.9rem !important;}}
@@ -766,16 +858,205 @@ with tab_comunicacao:
     else:
         st.info("Ainda não existem leads no sistema.")
 
+# --- 4. ABA ARQUITECTOS ---
+with tab_arquitectos:
+    st.markdown("### Base de Dados de Arquitectos")
+    
+    with st.expander("➕ Adicionar Arquitecto"):
+        with st.form("form_add_arquitecto", clear_on_submit=True):
+            c1, c2, c3 = st.columns(3)
+            with c1:
+                arq_nome = st.text_input("Nome")
+                arq_resp = st.text_input("Responsável")
+            with c2:
+                arq_tel = st.text_input("Telefone")
+                arq_email = st.text_input("Email")
+            with c3:
+                arq_dist = st.text_input("Distrito")
+                
+            st.markdown("**Estado do Contacto**")
+            b1, b2, b3, b4 = st.columns(4)
+            with b1: arq_contactado = st.selectbox("Contactado", OPCOES_SIM_NAO, index=1, key="new_arq_cont")
+            with b2: arq_reuniao = st.selectbox("Reunião", OPCOES_SIM_NAO, index=1, key="new_arq_reun")
+            with b3: arq_interessado = st.selectbox("Interessado", OPCOES_SIM_NAO, index=1, key="new_arq_int")
+            with b4: arq_parceria = st.selectbox("Parceria", OPCOES_SIM_NAO, index=1, key="new_arq_parc")
+            
+            if st.form_submit_button("Confirmar e Adicionar Arquitecto"):
+                if not arq_nome.strip():
+                    st.warning("O campo 'Nome' é obrigatório.")
+                else:
+                    novo_arq = {
+                        "Nome": arq_nome.strip(),
+                        "Responsável": arq_resp.strip(),
+                        "Telefone": arq_tel.strip(),
+                        "Email": arq_email.strip(),
+                        "Distrito": arq_dist.strip(),
+                        "Contactado": arq_contactado,
+                        "Reunião": arq_reuniao,
+                        "Interessado": arq_interessado,
+                        "Parceria": arq_parceria
+                    }
+                    st.session_state.architects_db = pd.concat([st.session_state.architects_db, pd.DataFrame([novo_arq])], ignore_index=True)
+                    save_contact_data(st.session_state.architects_db, ARCHITECTS_PATH)
+                    st.success("Arquitecto adicionado com sucesso!")
+                    st.rerun()
+
+    st.markdown("#### Quadro de Arquitectos (Editável)")
+    f_arq1, f_arq2 = st.columns(2)
+    pesq_arq_nome = f_arq1.text_input("Filtrar por Nome", key="filtro_arq_nome")
+    distritos_arq = get_clean_list(st.session_state.architects_db, "Distrito")
+    pesq_arq_dist = f_arq2.selectbox("Filtrar por Distrito", distritos_arq, key="filtro_arq_dist")
+
+    df_arq_view = st.session_state.architects_db.copy()
+    if pesq_arq_nome.strip():
+        df_arq_view = df_arq_view[df_arq_view["Nome"].astype(str).str.contains(pesq_arq_nome.strip(), case=False, na=False)]
+    if pesq_arq_dist != "Todos":
+        df_arq_view = df_arq_view[df_arq_view["Distrito"] == pesq_arq_dist]
+
+    config_cols_arq = {
+        "Nome": st.column_config.TextColumn("Nome", required=True),
+        "Responsável": st.column_config.TextColumn("Responsável"),
+        "Telefone": st.column_config.TextColumn("Telefone"),
+        "Email": st.column_config.TextColumn("Email"),
+        "Distrito": st.column_config.TextColumn("Distrito"),
+        "Contactado": st.column_config.SelectboxColumn("Contactado", options=OPCOES_SIM_NAO, default="🔴 Não", required=True),
+        "Reunião": st.column_config.SelectboxColumn("Reunião", options=OPCOES_SIM_NAO, default="🔴 Não", required=True),
+        "Interessado": st.column_config.SelectboxColumn("Interessado", options=OPCOES_SIM_NAO, default="🔴 Não", required=True),
+        "Parceria": st.column_config.SelectboxColumn("Parceria", options=OPCOES_SIM_NAO, default="🔴 Não", required=True),
+    }
+
+    edited_arq = st.data_editor(
+        df_arq_view,
+        column_config=config_cols_arq,
+        use_container_width=True,
+        hide_index=True,
+        num_rows="dynamic",
+        key="editor_arquitectos"
+    )
+
+    if not edited_arq.equals(df_arq_view):
+        st.session_state.architects_db.update(edited_arq)
+        novas_linhas_arq = edited_arq.loc[~edited_arq.index.isin(st.session_state.architects_db.index)].copy()
+        if not novas_linhas_arq.empty:
+            for c in cols_arq_bool:
+                novas_linhas_arq[c] = novas_linhas_arq[c].fillna("🔴 Não").replace("", "🔴 Não")
+            for c in cols_arq_texto:
+                novas_linhas_arq[c] = novas_linhas_arq[c].fillna("")
+            st.session_state.architects_db = pd.concat([st.session_state.architects_db, novas_linhas_arq])
+        apagados_arq = df_arq_view.index.difference(edited_arq.index)
+        if not apagados_arq.empty:
+            st.session_state.architects_db = st.session_state.architects_db.drop(apagados_arq)
+        st.session_state.architects_db = st.session_state.architects_db.reset_index(drop=True)
+        save_contact_data(st.session_state.architects_db, ARCHITECTS_PATH)
+        st.rerun()
+
+# --- 5. ABA CONSTRUCTORES ---
+with tab_construtores:
+    st.markdown("### Base de Dados de Constructores")
+    
+    with st.expander("➕ Adicionar Construtor"):
+        with st.form("form_add_construtor", clear_on_submit=True):
+            c1, c2, c3 = st.columns(3)
+            with c1:
+                con_nome = st.text_input("Nome")
+                con_alvara = st.text_input("Alvará")
+                con_dist = st.text_input("Distrito")
+            with c2:
+                con_resp = st.text_input("Responsável")
+                con_funcao = st.text_input("Função")
+            with c3:
+                con_tel = st.text_input("Telefone")
+                con_email = st.text_input("Email")
+                
+            st.markdown("**Estado do Contacto**")
+            b1, b2, b3 = st.columns(3)
+            with b1: con_contactado = st.selectbox("Contactado", OPCOES_SIM_NAO, index=1, key="new_con_cont")
+            with b2: con_reuniao = st.selectbox("Reunião", OPCOES_SIM_NAO, index=1, key="new_con_reun")
+            with b3: con_parceria = st.selectbox("Parceria", OPCOES_SIM_NAO, index=1, key="new_con_parc")
+            
+            if st.form_submit_button("Confirmar e Adicionar Construtor"):
+                if not con_nome.strip():
+                    st.warning("O campo 'Nome' é obrigatório.")
+                else:
+                    novo_con = {
+                        "Nome": con_nome.strip(),
+                        "Alvará": con_alvara.strip(),
+                        "Distrito": con_dist.strip(),
+                        "Responsável": con_resp.strip(),
+                        "Função": con_funcao.strip(),
+                        "Telefone": con_tel.strip(),
+                        "Email": con_email.strip(),
+                        "Contactado": con_contactado,
+                        "Reunião": con_reuniao,
+                        "Parceria": con_parceria
+                    }
+                    st.session_state.builders_db = pd.concat([st.session_state.builders_db, pd.DataFrame([novo_con])], ignore_index=True)
+                    save_contact_data(st.session_state.builders_db, BUILDERS_PATH)
+                    st.success("Construtor adicionado com sucesso!")
+                    st.rerun()
+
+    st.markdown("#### Quadro de Constructores (Editável)")
+    f_con1, f_con2, f_con3 = st.columns(3)
+    pesq_con_nome = f_con1.text_input("Filtrar por Nome", key="filtro_con_nome")
+    distritos_con = get_clean_list(st.session_state.builders_db, "Distrito")
+    pesq_con_dist = f_con2.selectbox("Filtrar por Distrito", distritos_con, key="filtro_con_dist")
+    pesq_con_alv = f_con3.text_input("Filtrar por Alvará", key="filtro_con_alv")
+
+    df_con_view = st.session_state.builders_db.copy()
+    if pesq_con_nome.strip():
+        df_con_view = df_con_view[df_con_view["Nome"].astype(str).str.contains(pesq_con_nome.strip(), case=False, na=False)]
+    if pesq_con_dist != "Todos":
+        df_con_view = df_con_view[df_con_view["Distrito"] == pesq_con_dist]
+    if pesq_con_alv.strip():
+        df_con_view = df_con_view[df_con_view["Alvará"].astype(str).str.contains(pesq_con_alv.strip(), case=False, na=False)]
+
+    config_cols_con = {
+        "Nome": st.column_config.TextColumn("Nome", required=True),
+        "Alvará": st.column_config.TextColumn("Alvará"),
+        "Distrito": st.column_config.TextColumn("Distrito"),
+        "Responsável": st.column_config.TextColumn("Responsável"),
+        "Função": st.column_config.TextColumn("Função"),
+        "Telefone": st.column_config.TextColumn("Telefone"),
+        "Email": st.column_config.TextColumn("Email"),
+        "Contactado": st.column_config.SelectboxColumn("Contactado", options=OPCOES_SIM_NAO, default="🔴 Não", required=True),
+        "Reunião": st.column_config.SelectboxColumn("Reunião", options=OPCOES_SIM_NAO, default="🔴 Não", required=True),
+        "Parceria": st.column_config.SelectboxColumn("Parceria", options=OPCOES_SIM_NAO, default="🔴 Não", required=True),
+    }
+
+    edited_con = st.data_editor(
+        df_con_view,
+        column_config=config_cols_con,
+        use_container_width=True,
+        hide_index=True,
+        num_rows="dynamic",
+        key="editor_constructores"
+    )
+
+    if not edited_con.equals(df_con_view):
+        st.session_state.builders_db.update(edited_con)
+        novas_linhas_con = edited_con.loc[~edited_con.index.isin(st.session_state.builders_db.index)].copy()
+        if not novas_linhas_con.empty:
+            for c in cols_const_bool:
+                novas_linhas_con[c] = novas_linhas_con[c].fillna("🔴 Não").replace("", "🔴 Não")
+            for c in cols_const_texto:
+                novas_linhas_con[c] = novas_linhas_con[c].fillna("")
+            st.session_state.builders_db = pd.concat([st.session_state.builders_db, novas_linhas_con])
+        apagados_con = df_con_view.index.difference(edited_con.index)
+        if not apagados_con.empty:
+            st.session_state.builders_db = st.session_state.builders_db.drop(apagados_con)
+        st.session_state.builders_db = st.session_state.builders_db.reset_index(drop=True)
+        save_contact_data(st.session_state.builders_db, BUILDERS_PATH)
+        st.rerun()
+
 # --- 6. TCT ---
 with tab_tct:
     st.markdown("### Gestão TCT")
     st.caption("Tabela independente para a TCT. Podes adicionar novos registos em baixo.")
     
     df_tct = st.session_state.tct_db.copy()
-    styled_tct = df_tct.style.map(lambda v: {"⚪ Em Análise": "background-color:#FFF;color:#000", "🟡 Em Concurso": "background-color:#FFD700;color:#000", "🟣 Em Negociação": "background-color:#7B2CBF;color:#FFF", "🟢 Adjudicado": "background-color:#A5D6A7;color:#000", "🔴 Não Adjudicado": "background-color:#FF6B6B;color:#000"}.get(v, ""), subset=["Fase"])
     
     edited_tct = st.data_editor(
-        styled_tct,
+        df_tct,
         column_config={
             "Fase": st.column_config.SelectboxColumn("Fase", options=FASES_ATUAIS),
             "Valor Estimado": st.column_config.NumberColumn("Valor Estimado", format="%.0f €", step=1000.0),
@@ -803,10 +1084,9 @@ with tab_alca:
     st.caption("Tabela independente para a ALCA. Podes adicionar novos registos em baixo.")
     
     df_alca = st.session_state.alca_db.copy()
-    styled_alca = df_alca.style.map(lambda v: {"⚪ Em Análise": "background-color:#FFF;color:#000", "🟡 Em Concurso": "background-color:#FFD700;color:#000", "🟣 Em Negociação": "background-color:#7B2CBF;color:#FFF", "🟢 Adjudicado": "background-color:#A5D6A7;color:#000", "🔴 Não Adjudicado": "background-color:#FF6B6B;color:#000"}.get(v, ""), subset=["Fase"])
     
     edited_alca = st.data_editor(
-        styled_alca,
+        df_alca,
         column_config={
             "Fase": st.column_config.SelectboxColumn("Fase", options=FASES_ATUAIS),
             "Valor Estimado": st.column_config.NumberColumn("Valor Estimado", format="%.0f €", step=1000.0),
@@ -834,10 +1114,9 @@ with tab_famo:
     st.caption("Tabela independente para a FAMO. Podes adicionar novos registos em baixo.")
     
     df_famo = st.session_state.famo_db.copy()
-    styled_famo = df_famo.style.map(lambda v: {"⚪ Em Análise": "background-color:#FFF;color:#000", "🟡 Em Concurso": "background-color:#FFD700;color:#000", "🟣 Em Negociação": "background-color:#7B2CBF;color:#FFF", "🟢 Adjudicado": "background-color:#A5D6A7;color:#000", "🔴 Não Adjudicado": "background-color:#FF6B6B;color:#000"}.get(v, ""), subset=["Fase"])
     
     edited_famo = st.data_editor(
-        styled_famo,
+        df_famo,
         column_config={
             "Fase": st.column_config.SelectboxColumn("Fase", options=FASES_ATUAIS),
             "Valor Estimado": st.column_config.NumberColumn("Valor Estimado", format="%.0f €", step=1000.0),
@@ -961,35 +1240,22 @@ with tab_financeiro:
         st.markdown("**Edição e Resumo Financeiro de Projectos**")
         st.caption("Insere as percentagens e os valores em euros serão calculados automaticamente.")
         
-        def cor_fase_bg(val):
-            colors = {
-                "⚪ Em Análise": "background-color: #FFFFFF; color: #000000;",
-                "🟡 Em Concurso": "background-color: #FFD700; color: #000000;",
-                "🟣 Em Negociação": "background-color: #7B2CBF; color: #FFFFFF;",
-                "🟢 Adjudicado": "background-color: #A5D6A7; color: #000000;",
-                "🔴 Não Adjudicado": "background-color: #FF6B6B; color: #000000;"
-            }
-            return colors.get(val, "")
-        
         cols_fin = ["Cliente", "Projeto", "Fase", "Valor Estimado", "% DBS", "Valor da % DBS", "Inter", "% Inter", "Valor da % Inter"]
         df_fin = st.session_state.leads_db[cols_fin].copy()
-        
         df_fin["Inter"] = df_fin["Inter"].astype(str).replace("nan", "").replace("None", "")
 
         for col in ["% DBS", "Valor da % DBS", "% Inter", "Valor da % Inter"]:
             df_fin[col] = pd.to_numeric(df_fin[col], errors='coerce').fillna(0.0)
             
-        styled_fin = df_fin.style.map(cor_fase_bg, subset=["Fase"])
-        
         edited_fin = st.data_editor(
-            styled_fin,
+            df_fin,
             column_config={
                 "Fase": st.column_config.SelectboxColumn("Fase", options=FASES_ATUAIS),
                 "Valor Estimado": st.column_config.NumberColumn("Valor Estimado", format="%.0f €", step=1000.0),
-                "%% DBS": st.column_config.NumberColumn("% DBS", format="%.2f %%"),
+                "% DBS": st.column_config.NumberColumn("% DBS", format="%.2f %%"),
                 "Valor da % DBS": st.column_config.NumberColumn("Valor da % DBS", format="%.0f €", disabled=True),
                 "Inter": st.column_config.TextColumn("Inter"),
-                "%% Inter": st.column_config.NumberColumn("% Inter", format="%.2f %%"),
+                "% Inter": st.column_config.NumberColumn("% Inter", format="%.2f %%"),
                 "Valor da % Inter": st.column_config.NumberColumn("Valor da % Inter", format="%.0f €", disabled=True),
             },
             use_container_width=True,
