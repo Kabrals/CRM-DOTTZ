@@ -11,7 +11,8 @@ st.set_page_config(page_title="CRM Dottz", page_icon="logo.png", layout="wide")
 # --- SISTEMA DE LOGIN DE UTILIZADORES ---
 USERS = {
     "amcabral": "DBS2027",
-    "alcastro": "DBS2027"
+    "alcastro": "DBS2027",
+    "mguerra": "DBS2027"
 }
 
 # --- CONFIGURAÇÃO DOS CAMINHOS DAS PASTAS ---
@@ -23,8 +24,19 @@ KPI_PATH = "kpis_database.csv"
 ALCA_PATH = "alca_database.csv" 
 TCT_PATH = "tct_database.csv"
 FAMO_PATH = "famo_database.csv" 
-BUILDERS_PATH = "builders_database.csv"
-ARCHITECTS_PATH = "architects_database.csv"
+
+# NOVOS CAMINHOS LIMPOS PARA ARQUITECTOS E CONSTRUTORES (COMEÇAM DO ZERO)
+BUILDERS_PATH = "construtores_clean_db.csv"
+ARCHITECTS_PATH = "arquitectos_clean_db.csv"
+
+# ELIMINAR AUTOMATICAMENTE FICHEIROS ANTIGOS SE EXISTIREM NA PASTA
+OLD_FILES_TO_REMOVE = ["architects_database.csv", "builders_database.csv"]
+for old_file in OLD_FILES_TO_REMOVE:
+    if os.path.exists(old_file):
+        try:
+            os.remove(old_file)
+        except Exception:
+            pass
 
 ATTACHMENTS_DIR = "Anexos"
 LOGO_PATH = "logo.png"
@@ -363,10 +375,10 @@ def listar_nomes_arquitectos():
     nomes = arquitectos["Nome"].dropna().astype(str).str.strip()
     return sorted(nomes[nomes != ""].unique().tolist())
 
-def load_contact_data(file_name):
+def load_contact_data(file_name, expected_columns):
     if os.path.exists(file_name):
         return pd.read_csv(file_name)
-    return pd.DataFrame()
+    return pd.DataFrame(columns=expected_columns)
 
 def save_contact_data(df, file_name):
     df.to_csv(file_name, index=False, encoding="utf-8-sig")
@@ -420,13 +432,13 @@ if "famo_db" not in st.session_state:
     if changed_famo: df_famo.to_csv(FAMO_PATH, index=False, encoding="utf-8-sig")
     st.session_state.famo_db = df_famo
 
-# --- INICIALIZAÇÃO BASE DE DADOS ARQUITECTOS ---
+# --- INICIALIZAÇÃO BASE DE DADOS ARQUITECTOS (LIMPA E DE RAIZ) ---
 cols_arq_texto = ["Nome", "Responsável", "Telefone", "Email", "Distrito"]
 cols_arq_bool = ["Contactado", "Reunião", "Interessado", "Parceria"]
 cols_arq_todas = cols_arq_texto + cols_arq_bool
 
 if "architects_db" not in st.session_state:
-    df_arq = load_contact_data(ARCHITECTS_PATH)
+    df_arq = load_contact_data(ARCHITECTS_PATH, cols_arq_todas)
     for col in cols_arq_todas:
         if col not in df_arq.columns:
             df_arq[col] = "🔴 Não" if col in cols_arq_bool else ""
@@ -441,17 +453,13 @@ if "architects_db" not in st.session_state:
 
 nomes_arquitectos = listar_nomes_arquitectos()
 
-# --- INICIALIZAÇÃO BASE DE DADOS CONSTRUCTORES ---
+# --- INICIALIZAÇÃO BASE DE DADOS CONSTRUCTORES (LIMPA E DE RAIZ) ---
 cols_const_texto = ["Nome", "Alvará", "Distrito", "Responsável", "Função", "Telefone", "Email"]
 cols_const_bool = ["Contactado", "Reunião", "Parceria"]
 cols_const_todas = cols_const_texto + cols_const_bool
 
 if "builders_db" not in st.session_state:
-    df_build = load_contact_data(BUILDERS_PATH)
-    if "Empresa" in df_build.columns and "Nome" not in df_build.columns:
-        df_build = df_build.rename(columns={"Empresa": "Nome"})
-    if "Contacto" in df_build.columns and "Responsável" not in df_build.columns:
-        df_build = df_build.rename(columns={"Contacto": "Responsável"})
+    df_build = load_contact_data(BUILDERS_PATH, cols_const_todas)
     for col in cols_const_todas:
         if col not in df_build.columns:
             df_build[col] = "🔴 Não" if col in cols_const_bool else ""
@@ -902,6 +910,8 @@ with tab_arquitectos:
                     st.rerun()
 
     st.markdown("#### Quadro de Arquitectos (Editável)")
+    st.caption("Podes editar células diretamente, adicionar na última linha vazia, ou apagar linhas selecionando a margem esquerda e carregando na tecla Delete (ou usando o botão de eliminação em baixo).")
+    
     f_arq1, f_arq2 = st.columns(2)
     pesq_arq_nome = f_arq1.text_input("Filtrar por Nome", key="filtro_arq_nome")
     distritos_arq = get_clean_list(st.session_state.architects_db, "Distrito")
@@ -950,6 +960,25 @@ with tab_arquitectos:
         save_contact_data(st.session_state.architects_db, ARCHITECTS_PATH)
         st.rerun()
 
+    if not st.session_state.architects_db.empty:
+        st.markdown("---")
+        st.markdown("**Eliminar Registos de Arquitectos**")
+        col_del_arq1, col_del_arq2 = st.columns([3, 1])
+        opcoes_apagar_arq = [""] + [f"{idx} | {row['Nome']} ({row.get('Distrito', '')})" for idx, row in st.session_state.architects_db.iterrows()]
+        arq_selecionado_del = col_del_arq1.selectbox("Selecionar Arquitecto para remover:", opcoes_apagar_arq, key="sel_del_arq")
+        if col_del_arq1.button("🗑️ Eliminar Arquitecto Selecionado", key="btn_del_arq_one") and arq_selecionado_del != "":
+            idx_del = int(arq_selecionado_del.split(" | ")[0])
+            st.session_state.architects_db = st.session_state.architects_db.drop(idx_del).reset_index(drop=True)
+            save_contact_data(st.session_state.architects_db, ARCHITECTS_PATH)
+            st.success("Arquitecto removido com sucesso!")
+            st.rerun()
+        with col_del_arq2:
+            st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
+            if st.button("⚠️ Limpar Toda a Tabela", key="btn_clear_all_arq"):
+                st.session_state.architects_db = pd.DataFrame(columns=cols_arq_todas)
+                save_contact_data(st.session_state.architects_db, ARCHITECTS_PATH)
+                st.rerun()
+
 # --- 5. ABA CONSTRUCTORES ---
 with tab_construtores:
     st.markdown("### Base de Dados de Constructores")
@@ -996,6 +1025,8 @@ with tab_construtores:
                     st.rerun()
 
     st.markdown("#### Quadro de Constructores (Editável)")
+    st.caption("Podes editar células diretamente, adicionar na última linha vazia, ou apagar linhas selecionando a margem esquerda e carregando na tecla Delete (ou usando o botão de eliminação em baixo).")
+
     f_con1, f_con2, f_con3 = st.columns(3)
     pesq_con_nome = f_con1.text_input("Filtrar por Nome", key="filtro_con_nome")
     distritos_con = get_clean_list(st.session_state.builders_db, "Distrito")
@@ -1047,6 +1078,25 @@ with tab_construtores:
         st.session_state.builders_db = st.session_state.builders_db.reset_index(drop=True)
         save_contact_data(st.session_state.builders_db, BUILDERS_PATH)
         st.rerun()
+
+    if not st.session_state.builders_db.empty:
+        st.markdown("---")
+        st.markdown("**Eliminar Registos de Constructores**")
+        col_del_con1, col_del_con2 = st.columns([3, 1])
+        opcoes_apagar_con = [""] + [f"{idx} | {row['Nome']} (Alvará: {row.get('Alvará', '')})" for idx, row in st.session_state.builders_db.iterrows()]
+        con_selecionado_del = col_del_con1.selectbox("Selecionar Construtor para remover:", opcoes_apagar_con, key="sel_del_con")
+        if col_del_con1.button("🗑️ Eliminar Construtor Selecionado", key="btn_del_con_one") and con_selecionado_del != "":
+            idx_del = int(con_selecionado_del.split(" | ")[0])
+            st.session_state.builders_db = st.session_state.builders_db.drop(idx_del).reset_index(drop=True)
+            save_contact_data(st.session_state.builders_db, BUILDERS_PATH)
+            st.success("Construtor removido com sucesso!")
+            st.rerun()
+        with col_del_con2:
+            st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
+            if st.button("⚠️ Limpar Toda a Tabela", key="btn_clear_all_con"):
+                st.session_state.builders_db = pd.DataFrame(columns=cols_const_todas)
+                save_contact_data(st.session_state.builders_db, BUILDERS_PATH)
+                st.rerun()
 
 # --- 6. TCT ---
 with tab_tct:
