@@ -291,67 +291,6 @@ def load_contact_data(file_name):
 def save_contact_data(df, file_name):
     df.to_csv(file_name, index=False, encoding="utf-8-sig")
 
-# --- FUNÇÃO GESTÃO DIRETA NA TABELA PARA CONTACTOS ---
-def render_contact_tab(tab, title, state_key, file_name, col_config=None, filter_nome=False, filter_distrito=False, filter_alvara=False):
-    with tab:
-        st.markdown(f"### {title}")
-        st.caption("Usa os filtros abaixo para pesquisar. Adiciona, edita ou elimina contactos diretamente na tabela (seleciona a linha na margem esquerda e pressiona 'Delete' para apagar, ou escreve na última linha vazia para adicionar um novo).")
-
-        df_display = st.session_state[state_key].copy()
-
-        # Filtros de Pesquisa
-        if filter_nome or filter_distrito or filter_alvara:
-            st.markdown("**Filtros de Pesquisa:**")
-            f_cols = st.columns(3)
-            
-            if filter_nome and "Nome" in df_display.columns:
-                f_nome = f_cols[0].text_input("Pesquisar por Nome", key=f"filt_nome_{state_key}")
-                if f_nome.strip():
-                    df_display = df_display[df_display["Nome"].astype(str).str.contains(f_nome.strip(), case=False, na=False)]
-            
-            if filter_distrito and "Distrito" in df_display.columns:
-                distritos = get_clean_list(df_display, "Distrito")
-                f_dist = f_cols[1].selectbox("Filtrar por Distrito", distritos, key=f"filt_dist_{state_key}")
-                if f_dist != "Todos":
-                    df_display = df_display[df_display["Distrito"] == f_dist]
-                    
-            if filter_alvara and "Alvará" in df_display.columns:
-                f_alv = f_cols[2].text_input("Pesquisar por Alvará", key=f"filt_alv_{state_key}")
-                if f_alv.strip():
-                    df_display = df_display[df_display["Alvará"].astype(str).str.contains(f_alv.strip(), case=False, na=False)]
-
-        # Tabela Editável Dinâmica
-        edited_data = st.data_editor(
-            df_display,
-            column_config=col_config,
-            use_container_width=True,
-            hide_index=True,
-            num_rows="dynamic",
-            key=f"{state_key}_editor"
-        )
-
-        # Lógica de sincronização com o DataFrame principal (para lidar com filtros + edições)
-        if not edited_data.equals(df_display):
-            st.session_state[state_key].update(edited_data)
-            
-            # Adicionar novas linhas que foram criadas no Data Editor
-            new_rows = edited_data.loc[~edited_data.index.isin(st.session_state[state_key].index)]
-            if not new_rows.empty: 
-                # Preencher colunas vazias de sistema
-                for col in ["Contactado", "Interessado", "Parceria", "Projectos"]:
-                    if col in new_rows.columns:
-                        new_rows[col] = new_rows[col].fillna("🔴 Não").replace("", "🔴 Não")
-                st.session_state[state_key] = pd.concat([st.session_state[state_key], new_rows])
-                
-            # Eliminar linhas que foram apagadas no Data Editor
-            deleted_indices = df_display.index.difference(edited_data.index)
-            if not deleted_indices.empty: 
-                st.session_state[state_key] = st.session_state[state_key].drop(deleted_indices)
-                
-            st.session_state[state_key] = st.session_state[state_key].reset_index(drop=True)
-            save_contact_data(st.session_state[state_key], file_name)
-            st.rerun()
-
 # --- INICIALIZAR TODAS AS BASES DE DADOS E SINCRONIZAR FÓRMULAS ---
 if "leads_db" not in st.session_state: st.session_state.leads_db = load_data()
 
@@ -401,65 +340,39 @@ if "famo_db" not in st.session_state:
     if changed_famo: df_famo.to_csv(FAMO_PATH, index=False, encoding="utf-8-sig")
     st.session_state.famo_db = df_famo
 
-config_parcerias = {
-    "Contactado": st.column_config.SelectboxColumn("Contactado", options=["🟢 Sim", "🔴 Não"], required=True),
-    "Interessado": st.column_config.SelectboxColumn("Interessado", options=["🟢 Sim", "🔴 Não"], required=True),
-    "Parceria": st.column_config.SelectboxColumn("Parceria", options=["🟢 Sim", "🔴 Não"], required=True),
-    "Projectos": st.column_config.SelectboxColumn("Projectos", options=["🟢 Sim", "🔴 Não"], required=True)
-}
 colunas_parcerias = ["Contactado", "Interessado", "Parceria", "Projectos"]
 
-# --- LIMPEZA E CONFIGURAÇÃO RESTRITA DOS ARQUITECTOS ---
+# --- LIMPEZA E CONFIGURAÇÃO RESTRITA DOS ARQUITECTOS (MANTIDO EM BACKGROUND) ---
 cols_arq_requeridas = ["Nome", "Distrito", "Responsável", "Telefone", "Email", "Contactado", "Interessado", "Parceria", "Projectos"]
 if "architects_db" not in st.session_state:
     df_arq = load_contact_data("architects_database.csv")
-    
-    # Adicionar as colunas que faltarem
     for col in cols_arq_requeridas:
         if col not in df_arq.columns:
             df_arq[col] = "🔴 Não" if col in colunas_parcerias else ""
-            
-    # Forçar EXATAMENTE o subset de colunas pedido (descarta lixo residual)
     df_arq = df_arq[cols_arq_requeridas]
-    
-    # Preencher vazios em selects
     for col in colunas_parcerias:
         df_arq[col] = df_arq[col].replace("", "🔴 Não").fillna("🔴 Não")
-        
     st.session_state.architects_db = df_arq
     save_contact_data(st.session_state.architects_db, "architects_database.csv")
 
 nomes_arquitectos = listar_nomes_arquitectos()
 
-# --- LIMPEZA E CONFIGURAÇÃO RESTRITA DOS CONSTRUTORES ---
+# --- LIMPEZA E CONFIGURAÇÃO RESTRITA DOS CONSTRUTORES (MANTIDO EM BACKGROUND) ---
 cols_builders_requeridas = ["Nome", "Alvará", "Contacto", "Função", "Telefone", "Email", "Contactado", "Interessado", "Parceria", "Projectos"]
 if "builders_db" not in st.session_state:
     df_build = load_contact_data("builders_database.csv")
-    
-    # Migrar nome antigo se existir
     if "Empresa" in df_build.columns and "Nome" not in df_build.columns:
         df_build = df_build.rename(columns={"Empresa": "Nome"})
     elif "Empresa" in df_build.columns and "Nome" in df_build.columns:
         df_build.loc[df_build["Nome"].isna() | (df_build["Nome"]==""), "Nome"] = df_build["Empresa"]
-        
-    # Adicionar as colunas que faltarem
     for col in cols_builders_requeridas:
         if col not in df_build.columns:
             df_build[col] = "🔴 Não" if col in colunas_parcerias else ""
-            
-    # Forçar EXATAMENTE o subset de colunas pedido (descarta lixo residual)
     df_build = df_build[cols_builders_requeridas]
-    
-    # Preencher vazios em selects
     for col in colunas_parcerias:
         df_build[col] = df_build[col].replace("", "🔴 Não").fillna("🔴 Não")
-        
     st.session_state.builders_db = df_build
     save_contact_data(st.session_state.builders_db, "builders_database.csv")
-
-config_parcerias_const = config_parcerias.copy()
-config_parcerias_const["Contacto"] = st.column_config.TextColumn("Contacto", disabled=False)
-config_parcerias_const["Função"] = st.column_config.TextColumn("Função", disabled=False)
 
 # To Do List 
 if "todo_db" not in st.session_state:
@@ -543,12 +456,10 @@ st.markdown("<br>", unsafe_allow_html=True)
 
 st.session_state.setdefault("crm_tabs", "Capturar e Enriquecer")
 
-tab_captura, tab_pipeline, tab_comunicacao, tab_arquitectos, tab_construtores, tab_tct, tab_alca, tab_famo, tab_calendario, tab_financeiro, tab_pagamentos, tab_todo, tab_objectivos = st.tabs([
+tab_captura, tab_pipeline, tab_comunicacao, tab_tct, tab_alca, tab_famo, tab_calendario, tab_financeiro, tab_pagamentos, tab_todo, tab_objectivos = st.tabs([
     "Capturar e Enriquecer",
     "Pipeline de Negócios",
     "Interações & Follow-Ups",
-    "Arquitectos",
-    "Construtores",
     "TCT",
     "ALCA", 
     "FAMO", 
@@ -854,19 +765,6 @@ with tab_comunicacao:
                 st.rerun() 
     else:
         st.info("Ainda não existem leads no sistema.")
-
-# --- 4. ARQUITECTOS ---
-render_contact_tab(
-    tab_arquitectos, "Arquitectos", "architects_db", "architects_database.csv", 
-    col_config=config_parcerias, filter_nome=True, filter_distrito=True
-)
-
-# --- 5. CONSTRUTORES ---
-render_contact_tab(
-    tab_construtores, "Construtores", "builders_db", "builders_database.csv", 
-    col_config=config_parcerias_const, filter_nome=True, filter_distrito=True, filter_alvara=True
-)
-
 
 # --- 6. TCT ---
 with tab_tct:
